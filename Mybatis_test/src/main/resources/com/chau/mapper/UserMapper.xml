@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chau.mapper.UserMapper">
+    <resultMap id="userResultMap" type="user">
+        <!-- 表中主键封装 -->
+        <id column="id" property="id"></id>
+        <!-- 表中普通字段封装 -->
+        <result column="username" property="username"></result>
+        <result column="telephone" property="telephone"></result>
+        <result column="birthday" property="birthday"></result>
+        <result column="gender" property="gender"></result>
+        <result column="address" property="address"></result>
+    </resultMap>
+
+    <select id="findAllResultMap" resultMap="userResultMap">
+        select id,username from user
+    </select>
+
+    <select id="findByIdAndUsername1" resultType="user">
+        select * from user where id = #{param1} and username = #{param2}
+    </select>
+
+    <select id="findByIdAndUsername2" resultType="user" parameterType="user">
+        select * from user where id = #{id} and username = #{username}
+    </select>
+    
+    <select id="findByUsername" resultType="user" parameterType="string">
+        select * from user where username like #{username}
+    </select>
+
+    <select id="findByUsername2" resultType="user" parameterType="string">
+        <!--
+            concat()函数用于字符串拼接
+            在Oracle中，concat()函数只能传递二次参数，所以要嵌套拼接
+         -->
+        select * from user where username like concat(concat('%', #{username}), '%')
+    </select>
+
+    <!-- keyProperty="id":把返回主键的值封装到实体的id属性中 -->
+    <insert id="save" parameterType="user" useGeneratedKeys="true" keyProperty="id">
+        insert into user (username, telephone, birthday, gender, address) values (#{username}, #{telephone}, #{birthday}, #{gender},#{address})
+    </insert>
+
+    <!--
+        selectKey 适用范围广，支持所有类型数据库 keyColumn="id"
+        指定主键列名 keyProperty="id"
+        指定主键封装到实体的id属性中
+        resultType="int" 指定主键类型
+        order="AFTER" 设置在sql语句执行前(后)，执行此语句
+     -->
+    <insert id="save2" parameterType="user">
+        <selectKey keyColumn="id" keyProperty="id" resultType="int" order="AFTER">
+            SELECT LAST_INSERT_ID();
+        </selectKey>
+        insert into user (username, telephone, birthday, gender, address) values (#{username}, #{telephone}, #{birthday}, #{gender},#{address})
+    </insert>
+
+
+    <!-- if标签用法 -->
+    <select id="findByIdAndUsernameIf" parameterType="user" resultType="user">
+        select * from user
+        <where>
+            <if test="id != null">
+                and id = #{id}
+            </if>
+            <if test="username != null">
+                and username = #{username}
+            </if>
+        </where>
+    </select>
+
+    <!-- choose标签用法
+        相当于switch语句 when标签相当于case语句
+        otherwise标签相当于default
+     -->
+    <select id="findByIdAndUsernameChoose" parameterType="user" resultType="user">
+        select * from user
+        <where>
+            <choose>
+                <when test="id != null">
+                    and id = #{id}
+                </when>
+                <when test="username != null">
+                    and username = #{username}
+                </when>
+                <otherwise>
+                    and 1=1
+                </otherwise>
+            </choose>
+        </where>
+    </select>
+
+    <!-- set标签在更新的时候，自动加上set关键字，然后去掉最后一个条件的逗号 -->
+    <update id="updateIf" parameterType="user">
+        update user
+        <set>
+            <if test="username != null">
+                username = #{username},
+            </if>
+            <if test="birthday != null">
+                birthday = #{birthday},
+            </if>
+            <if test="telephone != null">
+                telephone = #{telephone},
+            </if>
+            <if test="gender != gender">
+                gender = #{gender},
+            </if>
+            <if test="address != address">
+                address = #{address},
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <!-- foreach标签用于遍历集合，有以下属性：
+        collection：代表要遍历的元素集合
+        open：代表语句的开始部分
+        close：代表结束部分
+        item：代表遍历集合中的每个元素，生成的变量名
+        separator：代表分割符
+     -->
+    <select id="findByList" parameterType="list" resultType="user">
+        select * from user
+        <where>
+            <!-- 如果查询集合为普通类型List，collection属性值为collection或list -->
+            <foreach collection="collection" open="id in(" close=")" item="id" separator=",">
+                #{id}
+            </foreach>
+        </where>
+    </select>
+</mapper>
